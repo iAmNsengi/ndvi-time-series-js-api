@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Replenish Exploration</title>
+    <!-- Main stylesheet for page layout and styles -->
+    <link rel="stylesheet" href="style.css" />
+    <!-- Leaflet CSS for the interactive map -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <!-- Leaflet.draw CSS for drawing polygons on the map -->
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css"
+    />
+  </head>
+  <body>
+    <header>
+      <h1>Replenish Exploration</h1>
+      <p>
+        Select a parcel in Spain to explore boundaries, ownership, and NDVI
+        trends.
+      </p>
+    </header>
+    <main>
+      <!-- Map container: where the interactive map will appear -->
+      <div id="map"></div>
+      <!-- Parcel Info Panel: shows details about the selected/drawn parcel -->
+      <div class="parcel-info-container">
+        <section id="parcel-info">
+          <h2>Parcel Info</h2>
+          <div id="parcel-details">Select a parcel to see details.</div>
+        </section>
+        <!-- NDVI Info Panel: will show NDVI chart and abandonment indicator -->
+
+        <section id="ndvi-info">
+          <h2>NDVI Trend</h2>
+          <canvas id="ndvi-chart"></canvas>
+          <div id="abandonment-indicator"></div>
+        </section>
+      </div>
+    </main>
+
+    <footer>
+      <h3>Project by Eliezer Nsengi</h3>
+    </footer>
+
+    <!-- Leaflet JS for the interactive map -->
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <!-- Leaflet.draw JS for drawing polygons -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
+
+    <!-- Chart.js for NDVI charting (not yet used) -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@openeo/js-client@2/openeo.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/oidc-client@1/lib/oidc-client.min.js"></script>
+
+    <script src="main.js"></script>
+  </body>
+</html>
