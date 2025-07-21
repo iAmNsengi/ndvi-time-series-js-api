@@ -77,7 +77,10 @@ async function fetchNDVIFromOpenEO(coords) {
   const con = await window.OpenEO.connect("https://openeo.cloud");
 
   // Authenticate using your personal access token
-  await con.authenticateBasic("user", "my token goes here");
+  await con.authenticateBasic(
+    "user",
+    "d5b3db689fd1235c38679acd4352130e619d2564910052d1026b0da91d2fa674"
+  );
 
   // Build process: load Sentinel-2, filter by geometry, calculate NDVI
   const builder = await con.buildProcess();
