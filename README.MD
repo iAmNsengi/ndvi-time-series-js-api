@@ -8,23 +8,21 @@ The goal was to create a web application that allows users to:
 - This enables users to explore land health and vegetation trends interactively, leveraging real satellite data.
 
 ### Technology Stack
-Frontend: HTML, CSS, JavaScript
-Map & Drawing: Leaflet.js and Leaflet.draw
-Charting: Chart.js for NDVI visualization
-Remote Sensing Data: openEO Platform (API for satellite data processing)
-Authentication: openEO personal access token
+- Frontend: HTML, CSS, JavaScript
+- Map & Drawing: Leaflet.js and Leaflet.draw
+- Charting: Chart.js for NDVI visualization
+- Remote Sensing Data: openEO Platform (API for satellite data processing)
+- Authentication: openEO personal access token
 
 ### Key Features and How They Work
-A. Interactive Map and Drawing
+- A. Interactive Map and Drawing
 Leaflet.js displays a map centered on Spain.
 Leaflet.draw adds drawing controls, allowing users to draw polygons (parcels) on the map.
 When a polygon is drawn, its coordinates are extracted and displayed in the UI.
-Code Example:
-Apply to main.js
-B. Displaying Parcel Information
+- B. Displaying Parcel Information
 When a polygon is drawn, its coordinates are shown in a dedicated info panel.
 The updateParcelInfo function formats and displays these coordinates.
-C. Fetching NDVI from openEO
+- C. Fetching NDVI from openEO
 openEO is a cloud platform that provides access to satellite data and processing.
 When a polygon is drawn, the app:
 Converts the polygon to GeoJSON format.
@@ -35,14 +33,12 @@ Load Sentinel-2 data for the area and time range.
 Calculate NDVI using the red and near-infrared bands.
 Aggregate the NDVI spatially over the drawn polygon (mean NDVI).
 Executes the process and retrieves the NDVI result.
-Code Example:
-Apply to main.js
+
 D. Visualizing NDVI
 The NDVI value is displayed as a bar chart using Chart.js.
 The value is also shown as text for clarity.
 The chart is updated every time a new polygon is drawn.
-Code Example:
-Apply to main.js
+
 
 ### Authentication: Why and How
 The openEO API requires authentication for data processing.
@@ -69,7 +65,7 @@ Chart.js is simple and effective for quick data visualization.
 Personal access tokens are the most reliable way to authenticate with openEO in browser-based apps.
 
 ### Further Improvements
-Add time series NDVI (not just mean for a fixed year).
-Allow users to select different satellite products or time ranges.
-Add error handling and loading indicators for better UX.
-Integrate SIGPAC search for official Spanish parcel lookup (already scaffolded in code).
+- Add time series NDVI (not just mean for a fixed year).
+- Allow users to select different satellite products or time ranges.
+- Add error handling and loading indicators for better UX.
+- Integrate SIGPAC search for official Spanish parcel lookup (already scaffolded in code).
