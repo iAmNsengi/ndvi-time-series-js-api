@@ -3,9 +3,9 @@
 ## Project Summary: Interactive Parcel NDVI Explorer with openEO
 ### Project Goal
 The goal was to create a web application that allows users to:
-Draw a parcel (polygon) on a map of Spain
-Instantly retrieve and visualize the NDVI (Normalized Difference Vegetation Index) for that area using the openEO API and Sentinel-2 satellite data
-This enables users to explore land health and vegetation trends interactively, leveraging real satellite data.
+- Draw a parcel (polygon) on a map of Spain
+- Instantly retrieve and visualize the NDVI (Normalized Difference Vegetation Index) for that area using the openEO API and Sentinel-2 satellite data
+- This enables users to explore land health and vegetation trends interactively, leveraging real satellite data.
 
 ### Technology Stack
 Frontend: HTML, CSS, JavaScript
