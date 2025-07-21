@@ -52,15 +52,15 @@ The token is used with authenticateBasic("user", "TOKEN") in the code.
 
 
 ### Project Structure
-index.html: Contains the map, info panels, and includes all required JS/CSS libraries.
-style.css: Styles the map and info panels for a clean, modern look.
-main.js: Contains all the logic for map interaction, NDVI fetching, and charting.
+- index.html: Contains the map, info panels, and includes all required JS/CSS libraries.
+- style.css: Styles the map and info panels for a clean, modern look.
+- main.js: Contains all the logic for map interaction, NDVI fetching, and charting.
 
 ### How to Use the App (Demo Flow)
-Open the web page.
-Draw a polygon anywhere on the map of Spain.
-Instantly see the coordinates in the info panel.
-The app fetches the NDVI for the drawn area from openEO and displays it as a chart and as text.
+- Open the web page.
+- Draw a polygon anywhere on the map of Spain.
+- Instantly see the coordinates in the info panel.
+- The app fetches the NDVI for the drawn area from openEO and displays it as a chart and as text.
 
 ### Why This Approach?
 Leaflet.js is lightweight, open-source, and perfect for interactive mapping.
