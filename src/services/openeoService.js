@@ -187,15 +187,84 @@ class OpenEOService {
   }
 
   collectionFromProduct(product) {
-    switch (product) {
-      case "GLO-30":
-        return "COPERNICUS/DEM/GLO-30";
-      case "GLO-90":
-        return "COPERNICUS/DEM/GLO-90";
-      case "EEA-10":
-        return "COPERNICUS/DEM/EEA-10"; // requires special access
-      default:
-        return "COPERNICUS/DEM/GLO-30";
+    // Default hardcoded IDs (used by some providers like Earth Engine driver)
+    const defaultMap = {
+      "GLO-30": "COPERNICUS/DEM/GLO-30",
+      "GLO-90": "COPERNICUS/DEM/GLO-90",
+      "EEA-10": "COPERNICUS/DEM/EEA-10",
+    };
+    return defaultMap[product] || defaultMap["GLO-30"];
+  }
+
+  async resolveDemCollectionId(product, token) {
+    // Try provider-specific discovery to avoid 404 CollectionNotFound
+    try {
+      const resp = await axios.get(`${this.baseURL}/collections`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const list = resp.data.collections || [];
+      const want =
+        product === "GLO-90" ? "90" : product === "EEA-10" ? "10" : "30";
+
+      // Log all collections to see what's available
+      console.log(`Available collections (${list.length} total):`);
+      list.forEach((c, i) => {
+        if (i < 20) {
+          // Log first 20 collections
+          console.log(`  ${i + 1}. ${c.id} - ${c.title || "No title"}`);
+        }
+      });
+      if (list.length > 20) {
+        console.log(`  ... and ${list.length - 20} more collections`);
+      }
+
+      // Look for DEM collections with broader search terms
+      const demCandidates = list.filter((c) => {
+        const id = (c.id || "").toLowerCase();
+        const title = (c.title || "").toLowerCase();
+        return (
+          id.includes("dem") ||
+          title.includes("dem") ||
+          id.includes("elevation") ||
+          title.includes("elevation") ||
+          id.includes("copernicus") ||
+          title.includes("copernicus") ||
+          id.includes("srtm") ||
+          title.includes("srtm")
+        );
+      });
+
+      console.log(`Found ${demCandidates.length} potential DEM collections:`);
+      demCandidates.forEach((c, i) => {
+        console.log(`  ${i + 1}. ${c.id} - ${c.title || "No title"}`);
+      });
+
+      // If we found DEM candidates, pick the first one
+      if (demCandidates.length > 0) {
+        const chosen = demCandidates[0].id;
+        console.log(`Resolved DEM collection for ${product}: ${chosen}`);
+        return chosen;
+      }
+
+      // If no DEM collections found, try some common Earth Engine DEM collection names
+      const commonDemIds = [
+        "USGS/SRTMGL1_003",
+        "NASA/NASADEM_HGT/001",
+        "JAXA/ALOS/AW3D30/V3_2",
+        "MERIT/DEM/v1_0_3",
+        "COPERNICUS/DEM/GLO-30",
+      ];
+
+      console.log(
+        `No DEM collections found in discovery. Trying common Earth Engine DEM: ${commonDemIds[0]}`
+      );
+      return commonDemIds[0];
+    } catch (err) {
+      console.warn(
+        `Failed to list collections (${err.message}). Using SRTM fallback.`
+      );
+      // Try a different Earth Engine DEM collection that's more commonly available
+      return "USGS/SRTMGL1_003"; // SRTM is commonly available in Earth Engine
     }
   }
 
@@ -218,7 +287,7 @@ class OpenEOService {
   async getDEMCutout(coordinates, product = "GLO-30", format = "GTiff") {
     try {
       const token = await this.getAccessToken();
-      const collectionId = this.collectionFromProduct(product);
+      const collectionId = await this.resolveDemCollectionId(product, token);
       const bbox = this.bboxFromPolygon(coordinates);
 
       const processGraph = {
