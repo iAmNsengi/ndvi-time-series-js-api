@@ -94,6 +94,16 @@ paths:
         Returns a clipped DEM raster for the area of interest.
         - product: GLO-30 (default), GLO-90, or EEA-10 (restricted).
         - format: GTiff (default), PNG, or JSON (debug/metadata).
+
+        **Viewing Image Results in Swagger:**
+        - **GTiff format**: Click "Download file" button to save the GeoTIFF
+        - **PNG format**: Right-click response area → "Save image as..." or "Open image in new tab"
+        - **JSON format**: Returns elevation statistics and metadata in the response body
+
+        **Working with Results:**
+        - GTiff files can be opened in QGIS, ArcGIS, or processed with GDAL
+        - PNG images provide immediate visual feedback of the elevation data
+        - JSON format is useful for getting summary statistics
       tags: [DEM]
       requestBody:
         required: true
@@ -115,20 +125,44 @@ paths:
                   format: GTiff
       responses:
         "200":
-          description: DEM cutout
+          description: DEM cutout as binary image or JSON data
           content:
             image/tiff:
               schema:
                 type: string
                 format: binary
+                description: GeoTIFF file containing elevation data (default)
+              example: Binary GeoTIFF data - can be opened in QGIS, ArcGIS, or other GIS software
             image/png:
               schema:
                 type: string
                 format: binary
+                description: PNG image visualization of elevation data
+              example: Binary PNG image - can be viewed directly in browser or image viewer
             application/json:
               schema:
                 type: object
                 additionalProperties: true
+                description: JSON representation of elevation data
+              example:
+                type: FeatureCollection
+                features:
+                  - type: Feature
+                    geometry:
+                      type: Polygon
+                      coordinates:
+                        [
+                          [
+                            [-3.80, 40.45],
+                            [-3.60, 40.47],
+                            [-3.70, 40.50],
+                            [-3.80, 40.45],
+                          ],
+                        ]
+                    properties:
+                      elevation_min: 650.2
+                      elevation_max: 1250.8
+                      elevation_mean: 892.5
         "400":
           $ref: "#/components/responses/ValidationError"
         "500":
