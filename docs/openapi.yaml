@@ -14,6 +14,8 @@ info:
 servers:
   - url: http://localhost:3000
     description: Local dev server
+  - url: https://ndvi-time-series-js-api.onrender.com
+    description: Production server
 tags:
   - name: NDVI
     description: Normalized Difference Vegetation Index
