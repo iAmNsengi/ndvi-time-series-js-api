@@ -142,27 +142,75 @@ paths:
             application/json:
               schema:
                 type: object
-                additionalProperties: true
-                description: JSON representation of elevation data
-              example:
-                type: FeatureCollection
-                features:
-                  - type: Feature
-                    geometry:
-                      type: Polygon
-                      coordinates:
-                        [
-                          [
-                            [-3.80, 40.45],
-                            [-3.60, 40.47],
-                            [-3.70, 40.50],
-                            [-3.80, 40.45],
-                          ],
-                        ]
+                properties:
+                  success:
+                    type: boolean
+                  elevationPoints:
+                    type: array
+                    description: Array of elevation points in user-friendly format
+                    items:
+                      type: object
+                      properties:
+                        x:
+                          type: number
+                          description: Longitude coordinate
+                        y:
+                          type: number
+                          description: Latitude coordinate
+                        elevation:
+                          type: number
+                          description: Elevation in meters
+                  statistics:
+                    type: object
                     properties:
-                      elevation_min: 650.2
-                      elevation_max: 1250.8
-                      elevation_mean: 892.5
+                      min:
+                        type: number
+                        description: Minimum elevation in meters
+                      max:
+                        type: number
+                        description: Maximum elevation in meters
+                      mean:
+                        type: number
+                        description: Average elevation in meters
+                      median:
+                        type: number
+                        description: Median elevation in meters
+                      stddev:
+                        type: number
+                        description: Standard deviation
+                      count:
+                        type: integer
+                        description: Number of valid elevation points
+                      units:
+                        type: string
+                        description: Unit of measurement
+                  rawData:
+                    type: object
+                    description: Original raw data from OpenEO
+                  savedFile:
+                    type: object
+                    description: File save information
+                description: Transformed elevation data with user-friendly coordinate points
+              example:
+                success: true
+                elevationPoints:
+                  - x: 5.053693
+                    y: 51.217015
+                    elevation: 21.06
+                  - x: 5.053970
+                    y: 51.217015
+                    elevation: 20.63
+                  - x: 5.054248
+                    y: 51.217015
+                    elevation: 20.47
+                statistics:
+                  min: 19.5
+                  max: 39.75
+                  mean: 22.84
+                  median: 21.73
+                  stddev: 3.21
+                  count: 1071
+                  units: "meters"
         "400":
           $ref: "#/components/responses/ValidationError"
         "500":
