@@ -185,6 +185,82 @@ class OpenEOService {
       throw new Error("Failed to get NDVI timeseries from OpenEO");
     }
   }
+
+  collectionFromProduct(product) {
+    switch (product) {
+      case "GLO-30":
+        return "COPERNICUS/DEM/GLO-30";
+      case "GLO-90":
+        return "COPERNICUS/DEM/GLO-90";
+      case "EEA-10":
+        return "COPERNICUS/DEM/EEA-10"; // requires special access
+      default:
+        return "COPERNICUS/DEM/GLO-30";
+    }
+  }
+
+  bboxFromPolygon(polygon) {
+    // polygon: [[[lon, lat], ...]] (first ring)
+    const ring = polygon?.[0] || [];
+    let west = Infinity,
+      south = Infinity,
+      east = -Infinity,
+      north = -Infinity;
+    for (const [lon, lat] of ring) {
+      if (lon < west) west = lon;
+      if (lon > east) east = lon;
+      if (lat < south) south = lat;
+      if (lat > north) north = lat;
+    }
+    return { west, south, east, north };
+  }
+
+  async getDEMCutout(coordinates, product = "GLO-30", format = "GTiff") {
+    try {
+      const token = await this.getAccessToken();
+      const collectionId = this.collectionFromProduct(product);
+      const bbox = this.bboxFromPolygon(coordinates);
+
+      const processGraph = {
+        load: {
+          process_id: "load_collection",
+          arguments: {
+            id: collectionId,
+            spatial_extent: bbox,
+          },
+        },
+        save: {
+          process_id: "save_result",
+          arguments: {
+            data: { from_node: "load" },
+            format,
+          },
+          result: true,
+        },
+      };
+
+      const response = await axios.post(
+        `${this.baseURL}/result`,
+        { process: { process_graph: processGraph } },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          responseType: format === "GTiff" ? "arraybuffer" : "json",
+        }
+      );
+
+      return response.data;
+    } catch (error) {
+      console.error("Error getting DEM cutout:", error.message);
+      if (error.response) {
+        console.error("Response status:", error.response.status);
+        console.error("Response data:", error.response.data);
+      }
+      throw new Error("Failed to get DEM cutout from OpenEO");
+    }
+  }
 }
 
 export default new OpenEOService();

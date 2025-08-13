@@ -1,0 +1,206 @@
+openapi: 3.0.3
+info:
+  title: Geospatial API (NDVI + DEM)
+  version: 1.0.0
+  description: |
+    Backend API to compute NDVI time series and retrieve Copernicus DEM cutouts via openEO.
+
+    - Auth towards openEO is handled server-side; these endpoints don't require client auth by default.
+    - DEM collections: GLO-30, GLO-90 (open), EEA-10 (restricted).
+
+    References:
+    - openEO Authentication: https://openeo.org/documentation/1.0/developers/api/reference.html#section/Authentication
+    - Copernicus DEM overview: https://dataspace.copernicus.eu/explore-data/data-collections/copernicus-contributing-missions/collections-description/COP-DEM
+servers:
+  - url: http://localhost:3000
+    description: Local dev server
+tags:
+  - name: NDVI
+    description: Normalized Difference Vegetation Index
+  - name: DEM
+    description: Digital Elevation Model
+paths:
+  /:
+    get:
+      summary: API root
+      tags: [NDVI]
+      responses:
+        "200":
+          description: Root information
+          content:
+            application/json:
+              schema:
+                type: object
+  /ndvi/health:
+    get:
+      summary: Health check
+      tags: [NDVI]
+      responses:
+        "200":
+          description: Service health status
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                  timestamp:
+                    type: string
+                    format: date-time
+  /ndvi/timeseries:
+    post:
+      summary: Get NDVI time series aggregated over a polygon
+      description: Computes NDVI from Sentinel-2 over a date range and aggregates values over the provided polygon.
+      tags: [NDVI]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NDVITimeseriesRequest"
+            examples:
+              sample:
+                value:
+                  start_date: "2023-06-01"
+                  end_date: "2023-06-30"
+                  coordinates:
+                    - [
+                        [-3.80, 40.45],
+                        [-3.70, 40.50],
+                        [-3.60, 40.47],
+                        [-3.80, 40.45],
+                      ]
+      responses:
+        "200":
+          description: NDVI time series result
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+              examples:
+                generic:
+                  value:
+                    ndvi_mean: 0.42
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "500":
+          $ref: "#/components/responses/ServerError"
+  /dem/clip:
+    post:
+      summary: Get DEM cutout for a polygon/bbox
+      description: |
+        Returns a clipped DEM raster for the area of interest.
+        - product: GLO-30 (default), GLO-90, or EEA-10 (restricted).
+        - format: GTiff (default), PNG, or JSON (debug/metadata).
+      tags: [DEM]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DEMClipRequest"
+            examples:
+              geotiff:
+                value:
+                  coordinates:
+                    - [
+                        [-3.80, 40.45],
+                        [-3.70, 40.50],
+                        [-3.60, 40.47],
+                        [-3.80, 40.45],
+                      ]
+                  product: GLO-30
+                  format: GTiff
+      responses:
+        "200":
+          description: DEM cutout
+          content:
+            image/tiff:
+              schema:
+                type: string
+                format: binary
+            image/png:
+              schema:
+                type: string
+                format: binary
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "500":
+          $ref: "#/components/responses/ServerError"
+components:
+  schemas:
+    Coordinate:
+      type: array
+      description: [longitude, latitude]
+      items:
+        type: number
+      minItems: 2
+      maxItems: 2
+    LinearRing:
+      type: array
+      items:
+        $ref: "#/components/schemas/Coordinate"
+      minItems: 3
+    NDVITimeseriesRequest:
+      type: object
+      required: [start_date, end_date, coordinates]
+      properties:
+        start_date:
+          type: string
+          format: date
+        end_date:
+          type: string
+          format: date
+        coordinates:
+          type: array
+          description: First ring of a polygon as an array of coordinates [lon,lat].
+          items:
+            $ref: "#/components/schemas/LinearRing"
+    DEMClipRequest:
+      type: object
+      required: [coordinates]
+      properties:
+        coordinates:
+          type: array
+          description: First ring of a polygon as an array of coordinates [lon,lat].
+          items:
+            $ref: "#/components/schemas/LinearRing"
+        product:
+          type: string
+          enum: [GLO-30, GLO-90, EEA-10]
+          default: GLO-30
+        format:
+          type: string
+          enum: [GTiff, PNG, JSON]
+          default: GTiff
+  responses:
+    ValidationError:
+      description: Validation error
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+              details:
+                type: array
+                items:
+                  type: string
+    ServerError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+              message:
+                type: string
