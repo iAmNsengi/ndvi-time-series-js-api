@@ -218,47 +218,77 @@ class OpenEOService {
         console.log(`  ... and ${list.length - 20} more collections`);
       }
 
-      // Look for DEM collections with broader search terms
+      // Let's try to find actual DEM collections by testing known DEM collection IDs
+      const knownDemIds = [
+        "USGS/SRTMGL1_003", // SRTM 30m
+        "CGIAR/SRTM90_V4", // SRTM 90m
+        "NASA/NASADEM_HGT/001", // NASADEM
+        "USGS/GMTED2010", // GMTED2010
+        "NOAA/NGDC/ETOPO1", // ETOPO1
+        "COPERNICUS/DEM/GLO-30", // Copernicus DEM
+        "JAXA/ALOS/AW3D30/V3_2", // ALOS World 3D
+      ];
+
+      console.log(`Testing known DEM collection IDs...`);
+
+      // Check which DEM collections exist
+      for (const testId of knownDemIds) {
+        const exists = list.some((c) => c.id === testId);
+        if (exists) {
+          console.log(`Found working DEM collection: ${testId}`);
+          return testId;
+        } else {
+          console.log(`Collection ${testId} not in available collections`);
+        }
+      }
+
+      // Look for any collections with DEM/elevation in the name (but filter out vegetation)
       const demCandidates = list.filter((c) => {
         const id = (c.id || "").toLowerCase();
         const title = (c.title || "").toLowerCase();
-        return (
+        const description = (c.description || "").toLowerCase();
+
+        const hasDemKeywords =
           id.includes("dem") ||
           title.includes("dem") ||
           id.includes("elevation") ||
           title.includes("elevation") ||
-          id.includes("copernicus") ||
-          title.includes("copernicus") ||
+          id.includes("height") ||
+          title.includes("height") ||
           id.includes("srtm") ||
-          title.includes("srtm")
-        );
+          title.includes("srtm") ||
+          description.includes("elevation") ||
+          description.includes("digital elevation");
+
+        // Exclude vegetation/phenology collections
+        const notVegetation =
+          !id.includes("sosd") &&
+          !id.includes("eosd") &&
+          !id.includes("vegetation") &&
+          !title.includes("vegetation") &&
+          !description.includes("phenology") &&
+          !description.includes("vegetation");
+
+        return hasDemKeywords && notVegetation;
       });
 
-      console.log(`Found ${demCandidates.length} potential DEM collections:`);
+      console.log(
+        `Found ${demCandidates.length} potential DEM collections after filtering:`
+      );
       demCandidates.forEach((c, i) => {
         console.log(`  ${i + 1}. ${c.id} - ${c.title || "No title"}`);
       });
 
-      // If we found DEM candidates, pick the first one
       if (demCandidates.length > 0) {
         const chosen = demCandidates[0].id;
-        console.log(`Resolved DEM collection for ${product}: ${chosen}`);
+        console.log(`Using filtered DEM collection: ${chosen}`);
         return chosen;
       }
 
-      // If no DEM collections found, try some common Earth Engine DEM collection names
-      const commonDemIds = [
-        "USGS/SRTMGL1_003",
-        "NASA/NASADEM_HGT/001",
-        "JAXA/ALOS/AW3D30/V3_2",
-        "MERIT/DEM/v1_0_3",
-        "COPERNICUS/DEM/GLO-30",
-      ];
-
       console.log(
-        `No DEM collections found in discovery. Trying common Earth Engine DEM: ${commonDemIds[0]}`
+        `No valid DEM collections found. Using fallback: USGS/SRTMGL1_003`
       );
-      return commonDemIds[0];
+      return "USGS/SRTMGL1_003";
     } catch (err) {
       console.warn(
         `Failed to list collections (${err.message}). Using SRTM fallback.`
@@ -290,23 +320,80 @@ class OpenEOService {
       const collectionId = await this.resolveDemCollectionId(product, token);
       const bbox = this.bboxFromPolygon(coordinates);
 
-      const processGraph = {
-        load: {
-          process_id: "load_collection",
-          arguments: {
-            id: collectionId,
-            spatial_extent: bbox,
-          },
-        },
-        save: {
-          process_id: "save_result",
-          arguments: {
-            data: { from_node: "load" },
-            format,
-          },
-          result: true,
-        },
+      console.log(
+        `Building DEM process graph for collection: ${collectionId}, format: ${format}`
+      );
+
+      // Map format to openEO format names
+      const formatMap = {
+        GTiff: "GTiff",
+        PNG: "PNG",
+        JSON: "JSON",
       };
+      const openeoFormat = formatMap[format] || "GTiff";
+
+      // Start with simple process graph - just load and save
+      let processGraph;
+
+      if (format === "JSON") {
+        // For JSON, try to get statistics
+        processGraph = {
+          load: {
+            process_id: "load_collection",
+            arguments: {
+              id: collectionId,
+              spatial_extent: bbox,
+            },
+          },
+          reduce: {
+            process_id: "reduce_dimension",
+            arguments: {
+              data: { from_node: "load" },
+              dimension: "t", // reduce temporal dimension if it exists
+              reducer: {
+                process_graph: {
+                  mean: {
+                    process_id: "mean",
+                    arguments: {
+                      data: { from_parameter: "data" },
+                    },
+                    result: true,
+                  },
+                },
+              },
+            },
+          },
+          save: {
+            process_id: "save_result",
+            arguments: {
+              data: { from_node: "reduce" },
+              format: "JSON",
+            },
+            result: true,
+          },
+        };
+      } else {
+        // For binary formats, keep it simple
+        processGraph = {
+          load: {
+            process_id: "load_collection",
+            arguments: {
+              id: collectionId,
+              spatial_extent: bbox,
+            },
+          },
+          save: {
+            process_id: "save_result",
+            arguments: {
+              data: { from_node: "load" },
+              format: openeoFormat,
+            },
+            result: true,
+          },
+        };
+      }
+
+      console.log("Process graph:", JSON.stringify(processGraph, null, 2));
 
       const response = await axios.post(
         `${this.baseURL}/result`,
@@ -316,10 +403,15 @@ class OpenEOService {
             Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
           },
-          responseType: format === "GTiff" ? "arraybuffer" : "json",
+          responseType: format === "JSON" ? "json" : "arraybuffer",
         }
       );
 
+      console.log(
+        `DEM request successful. Response type: ${typeof response.data}, Size: ${
+          response.data?.byteLength || "N/A"
+        } bytes`
+      );
       return response.data;
     } catch (error) {
       console.error("Error getting DEM cutout:", error.message);
@@ -332,4 +424,5 @@ class OpenEOService {
   }
 }
 
-export default new OpenEOService();
+const eoService = new OpenEOService();
+export default eoService;

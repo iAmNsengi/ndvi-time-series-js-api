@@ -28,6 +28,7 @@ const demRequestSchema = Joi.object({
   coordinates: Joi.array().items(linearRingSchema).required(),
   product: Joi.string().valid("GLO-30", "GLO-90", "EEA-10").default("GLO-30"),
   format: Joi.string().valid("GTiff", "PNG", "JSON").default("GTiff"),
+  saveLocally: Joi.boolean().default(true),
 }).messages({
   "any.required": "Missing required field",
 });

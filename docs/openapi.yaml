@@ -167,6 +167,110 @@ paths:
           $ref: "#/components/responses/ValidationError"
         "500":
           $ref: "#/components/responses/ServerError"
+  /dem/files:
+    get:
+      summary: List all saved DEM files
+      description: |
+        Returns a list of all DEM files that have been saved locally with their metadata.
+        Files are sorted by creation time (newest first).
+      tags: [DEM]
+      responses:
+        "200":
+          description: List of saved DEM files
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  total:
+                    type: integer
+                    description: Total number of files
+                  files:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        filename:
+                          type: string
+                        format:
+                          type: string
+                        product:
+                          type: string
+                        downloadUrl:
+                          type: string
+                        timestamp:
+                          type: string
+                          format: date-time
+                        fileSize:
+                          type: integer
+              example:
+                total: 2
+                files:
+                  - filename: "dem_2025_08_13T08_15_30_123Z_bbox_5.056_51.217_5.067_51.223.png"
+                    format: "PNG"
+                    product: "GLO-30"
+                    timestamp: "2025-08-13T08:15:30.123Z"
+                    fileSize: 15432
+                    downloadUrl: "/dem/files/dem_2025_08_13T08_15_30_123Z_bbox_5.056_51.217_5.067_51.223.png"
+        "500":
+          $ref: "#/components/responses/ServerError"
+  /dem/files/{filename}:
+    get:
+      summary: Download a saved DEM file
+      description: Downloads a specific DEM file that was previously saved locally.
+      tags: [DEM]
+      parameters:
+        - name: filename
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Name of the file to download
+          example: "dem_2025_08_13T08_15_30_123Z_bbox_5.056_51.217_5.067_51.223.png"
+      responses:
+        "200":
+          description: The requested file
+          content:
+            image/tiff:
+              schema:
+                type: string
+                format: binary
+            image/png:
+              schema:
+                type: string
+                format: binary
+            application/json:
+              schema:
+                type: object
+        "404":
+          description: File not found
+        "500":
+          $ref: "#/components/responses/ServerError"
+    delete:
+      summary: Delete a saved DEM file
+      description: Deletes a specific DEM file and its metadata from local storage.
+      tags: [DEM]
+      parameters:
+        - name: filename
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Name of the file to delete
+      responses:
+        "200":
+          description: File deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+        "404":
+          description: File not found
+        "500":
+          $ref: "#/components/responses/ServerError"
 components:
   schemas:
     Coordinate:
@@ -213,6 +317,10 @@ components:
           type: string
           enum: [GTiff, PNG, JSON]
           default: GTiff
+        saveLocally:
+          type: boolean
+          default: true
+          description: Whether to save the file locally with timestamp and metadata
   responses:
     ValidationError:
       description: Validation error
