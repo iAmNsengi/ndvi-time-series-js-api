@@ -220,12 +220,19 @@ class OpenEOService {
 
       // Let's try to find actual DEM collections by testing known DEM collection IDs
       const knownDemIds = [
+        // Copernicus DEM collections (different naming conventions)
+        "COPERNICUS_30", // Copernicus 30m DEM
+        "COPERNICUS_90", // Copernicus 90m DEM
+        "COPERNICUS_10", // Copernicus 10m DEM
+        "COPERNICUS/DEM/GLO-30", // Copernicus DEM GLO-30
+        "COPERNICUS/DEM/GLO-90", // Copernicus DEM GLO-90
+        "COPERNICUS/DEM/EEA-10", // Copernicus DEM EEA-10
+        // Other DEM collections
         "USGS/SRTMGL1_003", // SRTM 30m
         "CGIAR/SRTM90_V4", // SRTM 90m
         "NASA/NASADEM_HGT/001", // NASADEM
         "USGS/GMTED2010", // GMTED2010
         "NOAA/NGDC/ETOPO1", // ETOPO1
-        "COPERNICUS/DEM/GLO-30", // Copernicus DEM
         "JAXA/ALOS/AW3D30/V3_2", // ALOS World 3D
       ];
 

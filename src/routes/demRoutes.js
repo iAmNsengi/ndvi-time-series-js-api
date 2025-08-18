@@ -129,8 +129,8 @@ const validateDemRequest = (req, res, next) => {
   next();
 };
 
-// POST /dem → JSON format only
-router.post("/", validateDemRequest, async (req, res) => {
+// POST /dem/clip → JSON format only
+router.post("/clip", validateDemRequest, async (req, res) => {
   try {
     const { coordinates, product } = req.body;
 
@@ -179,7 +179,7 @@ router.post("/", validateDemRequest, async (req, res) => {
       ...(transformedData && {
         elevationPoints: transformedData.points,
         statistics: transformedData.statistics,
-        metadata: transformedData.metadata,
+        // metadata: transformedData.metadata,
       }),
       // Original raw data (optional, for advanced users)
       rawData: parsedData,

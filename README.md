@@ -85,7 +85,7 @@ Returns the NDVI timeseries data from OpenEO processing.
 ### DEM Data
 
 ```
-POST /dem
+POST /dem/clip
 ```
 
 Retrieve DEM (Digital Elevation Model) data for a specified area.
@@ -102,8 +102,7 @@ Retrieve DEM (Digital Elevation Model) data for a specified area.
       [5.055945487931457, 51.222709834076504]
     ]
   ],
-  "product": "GLO-30",
-  "format": "JSON"
+  "product": "GLO-30"
 }
 ```
 
@@ -111,7 +110,6 @@ Retrieve DEM (Digital Elevation Model) data for a specified area.
 
 - `coordinates`: Array of polygon coordinates in GeoJSON format (longitude, latitude pairs)
 - `product`: DEM product type - "GLO-30" (default), "GLO-90", or "EEA-10"
-- `format`: Output format - "JSON" only
 
 #### Response
 
