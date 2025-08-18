@@ -129,12 +129,12 @@ const validateDemRequest = (req, res, next) => {
   next();
 };
 
-// POST /dem/ → JSON format only
+// POST /dem → JSON format only
 router.post("/", validateDemRequest, async (req, res) => {
   try {
     const { coordinates, product } = req.body;
 
-    const data = await openeoService.getDEMCutout(coordinates, product, "JSON");
+    const data = await openeoService.getDEMCutout(coordinates, product);
 
     // Parse JSON data
     let parsedData = data;
