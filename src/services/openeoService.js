@@ -314,84 +314,52 @@ class OpenEOService {
     return { west, south, east, north };
   }
 
-  async getDEMCutout(coordinates, product = "GLO-30", format = "GTiff") {
+  async getDEMCutout(coordinates, product = "GLO-30") {
     try {
       const token = await this.getAccessToken();
       const collectionId = await this.resolveDemCollectionId(product, token);
       const bbox = this.bboxFromPolygon(coordinates);
 
       console.log(
-        `Building DEM process graph for collection: ${collectionId}, format: ${format}`
+        `Building DEM process graph for collection: ${collectionId}, format: JSON`
       );
 
-      // Map format to openEO format names
-      const formatMap = {
-        GTiff: "GTiff",
-        PNG: "PNG",
-        JSON: "JSON",
-      };
-      const openeoFormat = formatMap[format] || "GTiff";
-
-      // Start with simple process graph - just load and save
-      let processGraph;
-
-      if (format === "JSON") {
-        // For JSON, try to get statistics
-        processGraph = {
-          load: {
-            process_id: "load_collection",
-            arguments: {
-              id: collectionId,
-              spatial_extent: bbox,
-            },
+      // Process graph for JSON format - get statistics
+      const processGraph = {
+        load: {
+          process_id: "load_collection",
+          arguments: {
+            id: collectionId,
+            spatial_extent: bbox,
           },
-          reduce: {
-            process_id: "reduce_dimension",
-            arguments: {
-              data: { from_node: "load" },
-              dimension: "t", // reduce temporal dimension if it exists
-              reducer: {
-                process_graph: {
-                  mean: {
-                    process_id: "mean",
-                    arguments: {
-                      data: { from_parameter: "data" },
-                    },
-                    result: true,
+        },
+        reduce: {
+          process_id: "reduce_dimension",
+          arguments: {
+            data: { from_node: "load" },
+            dimension: "t", // reduce temporal dimension if it exists
+            reducer: {
+              process_graph: {
+                mean: {
+                  process_id: "mean",
+                  arguments: {
+                    data: { from_parameter: "data" },
                   },
+                  result: true,
                 },
               },
             },
           },
-          save: {
-            process_id: "save_result",
-            arguments: {
-              data: { from_node: "reduce" },
-              format: "JSON",
-            },
-            result: true,
+        },
+        save: {
+          process_id: "save_result",
+          arguments: {
+            data: { from_node: "reduce" },
+            format: "JSON",
           },
-        };
-      } else {
-        // For binary formats, keep it simple
-        processGraph = {
-          load: {
-            process_id: "load_collection",
-            arguments: {
-              id: collectionId,
-              spatial_extent: bbox,
-            },
-          },
-          save: {
-            process_id: "save_result",
-            arguments: {
-              data: { from_node: "load" },
-              format: openeoFormat,
-            },
-            result: true,
-          },
-        };
-      }
+          result: true,
+        },
+      };
 
       console.log("Process graph:", JSON.stringify(processGraph, null, 2));
 
@@ -403,14 +371,12 @@ class OpenEOService {
             Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
           },
-          responseType: format === "JSON" ? "json" : "arraybuffer",
+          responseType: "json",
         }
       );
 
       console.log(
-        `DEM request successful. Response type: ${typeof response.data}, Size: ${
-          response.data?.byteLength || "N/A"
-        } bytes`
+        `DEM request successful. Response type: ${typeof response.data}`
       );
       return response.data;
     } catch (error) {

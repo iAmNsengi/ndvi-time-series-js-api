@@ -7,6 +7,7 @@ info:
 
     - Auth towards openEO is handled server-side; these endpoints don't require client auth by default.
     - DEM collections: GLO-30, GLO-90 (open), EEA-10 (restricted).
+    - DEM data is returned in JSON format only.
 
     References:
     - openEO Authentication: https://openeo.org/documentation/1.0/developers/api/reference.html#section/Authentication
@@ -93,19 +94,15 @@ paths:
     post:
       summary: Get DEM cutout for a polygon/bbox
       description: |
-        Returns a clipped DEM raster for the area of interest.
+        Returns a clipped DEM raster for the area of interest in JSON format.
         - product: GLO-30 (default), GLO-90, or EEA-10 (restricted).
-        - format: GTiff (default), PNG, or JSON (debug/metadata).
+        - format: JSON only (elevation data with statistics and metadata).
 
-        **Viewing Image Results in Swagger:**
-        - **GTiff format**: Click "Download file" button to save the GeoTIFF
-        - **PNG format**: Right-click response area → "Save image as..." or "Open image in new tab"
-        - **JSON format**: Returns elevation statistics and metadata in the response body
-
-        **Working with Results:**
-        - GTiff files can be opened in QGIS, ArcGIS, or processed with GDAL
-        - PNG images provide immediate visual feedback of the elevation data
-        - JSON format is useful for getting summary statistics
+        **JSON Response Format:**
+        - elevationPoints: Array of {x, y, elevation} coordinate points
+        - statistics: Summary statistics (min, max, mean, median, stddev)
+        - metadata: Grid information and coordinate bounds
+        - rawData: Original OpenEO response data
       tags: [DEM]
       requestBody:
         required: true
@@ -114,7 +111,7 @@ paths:
             schema:
               $ref: "#/components/schemas/DEMClipRequest"
             examples:
-              geotiff:
+              json:
                 value:
                   coordinates:
                     - [
@@ -124,23 +121,11 @@ paths:
                         [-3.80, 40.45],
                       ]
                   product: GLO-30
-                  format: GTiff
+                  format: JSON
       responses:
         "200":
-          description: DEM cutout as binary image or JSON data
+          description: DEM cutout as JSON data with elevation points and statistics
           content:
-            image/tiff:
-              schema:
-                type: string
-                format: binary
-                description: GeoTIFF file containing elevation data (default)
-              example: Binary GeoTIFF data - can be opened in QGIS, ArcGIS, or other GIS software
-            image/png:
-              schema:
-                type: string
-                format: binary
-                description: PNG image visualization of elevation data
-              example: Binary PNG image - can be viewed directly in browser or image viewer
             application/json:
               schema:
                 type: object
@@ -189,9 +174,6 @@ paths:
                   rawData:
                     type: object
                     description: Original raw data from OpenEO
-                  savedFile:
-                    type: object
-                    description: File save information
                 description: Transformed elevation data with user-friendly coordinate points
               example:
                 success: true
@@ -215,110 +197,6 @@ paths:
                   units: "meters"
         "400":
           $ref: "#/components/responses/ValidationError"
-        "500":
-          $ref: "#/components/responses/ServerError"
-  /dem/files:
-    get:
-      summary: List all saved DEM files
-      description: |
-        Returns a list of all DEM files that have been saved locally with their metadata.
-        Files are sorted by creation time (newest first).
-      tags: [DEM]
-      responses:
-        "200":
-          description: List of saved DEM files
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  total:
-                    type: integer
-                    description: Total number of files
-                  files:
-                    type: array
-                    items:
-                      type: object
-                      properties:
-                        filename:
-                          type: string
-                        format:
-                          type: string
-                        product:
-                          type: string
-                        downloadUrl:
-                          type: string
-                        timestamp:
-                          type: string
-                          format: date-time
-                        fileSize:
-                          type: integer
-              example:
-                total: 2
-                files:
-                  - filename: "dem_2025_08_13T08_15_30_123Z_bbox_5.056_51.217_5.067_51.223.png"
-                    format: "PNG"
-                    product: "GLO-30"
-                    timestamp: "2025-08-13T08:15:30.123Z"
-                    fileSize: 15432
-                    downloadUrl: "/dem/files/dem_2025_08_13T08_15_30_123Z_bbox_5.056_51.217_5.067_51.223.png"
-        "500":
-          $ref: "#/components/responses/ServerError"
-  /dem/files/{filename}:
-    get:
-      summary: Download a saved DEM file
-      description: Downloads a specific DEM file that was previously saved locally.
-      tags: [DEM]
-      parameters:
-        - name: filename
-          in: path
-          required: true
-          schema:
-            type: string
-          description: Name of the file to download
-          example: "dem_2025_08_13T08_15_30_123Z_bbox_5.056_51.217_5.067_51.223.png"
-      responses:
-        "200":
-          description: The requested file
-          content:
-            image/tiff:
-              schema:
-                type: string
-                format: binary
-            image/png:
-              schema:
-                type: string
-                format: binary
-            application/json:
-              schema:
-                type: object
-        "404":
-          description: File not found
-        "500":
-          $ref: "#/components/responses/ServerError"
-    delete:
-      summary: Delete a saved DEM file
-      description: Deletes a specific DEM file and its metadata from local storage.
-      tags: [DEM]
-      parameters:
-        - name: filename
-          in: path
-          required: true
-          schema:
-            type: string
-          description: Name of the file to delete
-      responses:
-        "200":
-          description: File deleted successfully
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-        "404":
-          description: File not found
         "500":
           $ref: "#/components/responses/ServerError"
 components:
@@ -365,12 +243,8 @@ components:
           default: GLO-30
         format:
           type: string
-          enum: [GTiff, PNG, JSON]
-          default: GTiff
-        saveLocally:
-          type: boolean
-          default: true
-          description: Whether to save the file locally with timestamp and metadata
+          enum: [JSON]
+          default: JSON
   responses:
     ValidationError:
       description: Validation error

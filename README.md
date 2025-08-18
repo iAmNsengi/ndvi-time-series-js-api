@@ -1,12 +1,14 @@
-# NDVI Timeseries API
+# Geospatial API (NDVI + DEM)
 
-A REST API for calculating NDVI (Normalized Difference Vegetation Index) timeseries data using OpenEO and Sentinel-2 satellite imagery.
+A REST API for calculating NDVI (Normalized Difference Vegetation Index) timeseries data and retrieving Digital Elevation Model (DEM) data using OpenEO and Sentinel-2 satellite imagery.
 
 ## Features
 
 - Calculate NDVI timeseries for specified geographic areas
-- Uses Sentinel-2 L2A data (B04 and B08 bands)
-- Supports custom date ranges and polygon coordinates
+- Retrieve DEM (Digital Elevation Model) data for specified areas
+- Uses Sentinel-2 L2A data (B04 and B08 bands) for NDVI
+- Supports Copernicus DEM collections (GLO-30, GLO-90, EEA-10)
+- JSON format only for all data responses
 - Built with Express.js and OpenEO integration
 
 ## Prerequisites
@@ -80,6 +82,45 @@ Calculate NDVI timeseries for a specified area and date range.
 
 Returns the NDVI timeseries data from OpenEO processing.
 
+### DEM Data
+
+```
+POST /dem
+```
+
+Retrieve DEM (Digital Elevation Model) data for a specified area.
+
+#### Request Body
+
+```json
+{
+  "coordinates": [
+    [
+      [5.055945487931457, 51.222709834076504],
+      [5.064972484168688, 51.221122565090525],
+      [5.067474954083448, 51.218249806779134],
+      [5.055945487931457, 51.222709834076504]
+    ]
+  ],
+  "product": "GLO-30",
+  "format": "JSON"
+}
+```
+
+#### Parameters
+
+- `coordinates`: Array of polygon coordinates in GeoJSON format (longitude, latitude pairs)
+- `product`: DEM product type - "GLO-30" (default), "GLO-90", or "EEA-10"
+- `format`: Output format - "JSON" only
+
+#### Response
+
+Returns elevation data in JSON format with:
+
+- `elevationPoints`: Array of {x, y, elevation} coordinate points
+- `statistics`: Summary statistics (min, max, mean, median, stddev)
+- `metadata`: Grid information and coordinate bounds
+- `rawData`: Original OpenEO response data
 
 ## Error Handling
 
@@ -89,21 +130,27 @@ The API returns appropriate HTTP status codes:
 - `400`: Validation error (check request format)
 - `500`: Internal server error
 
-
 ## Project Structure
 
 ```
-js/
+leaflet-viewer/
 ├── src/
-│   ├── app.js              # Main application file
-│   ├── config.js           # Configuration and environment variables
+│   ├── app.js                    # Main application file
+│   ├── config.js                 # Configuration and environment variables
 │   ├── routes/
-│   │   └── ndviRoutes.js   # API route definitions
+│   │   ├── ndviRoutes.js         # NDVI API route definitions
+│   │   └── demRoutes.js          # DEM API route definitions
 │   ├── services/
-│   │   └── openeoService.js # OpenEO integration service
+│   │   └── openeoService.js      # OpenEO integration service
 │   └── validation/
-│       └── schema.js       # Request validation schemas
+│       └── schema.js             # Request validation schemas
+├── docs/
+│   └── openapi.yaml              # OpenAPI documentation
 ├── package.json
 ├── Dockerfile
 └── README.md
 ```
+
+## API Documentation
+
+Interactive API documentation is available at `/docs` when the server is running.
